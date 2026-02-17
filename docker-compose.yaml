@@ -57,10 +57,27 @@ services:
       LDAP_ADMIN_PASSWORD: "admin"
       LDAP_DOMAIN: "example.com"
       LDAP_BASE_DN: "dc=example,dc=com"
-    volumes:
-      - ./ldap/seed:/container/service/slapd/assets/config/bootstrap/ldif/custom
     ports:
       - "389:389"
+
+  ldap-seed:
+    image: osixia/openldap:1.5.0
+    depends_on:
+      - ldap
+    volumes:
+      - ./ldap/seed/users-and-groups.ldif:/ldif/users-and-groups.ldif:ro
+    entrypoint: ["/bin/bash", "-lc"]
+    command: >
+      '
+      echo "Waiting for LDAP...";
+      for i in {1..60}; do
+        ldapsearch -x -H ldap://ldap:389 -D "cn=admin,dc=example,dc=com" -w admin -b "dc=example,dc=com" >/dev/null 2>&1 && break;
+        sleep 1;
+      done;
+      echo "Seeding LDAP...";
+      ldapadd -x -H ldap://ldap:389 -D "cn=admin,dc=example,dc=com" -w admin -f /ldif/users-and-groups.ldif || true;
+      echo "LDAP seed done.";
+      '
 
   redis:
     image: redis:7-alpine
@@ -95,7 +112,7 @@ services:
 
       # шифрование refresh_token (fernet key: urlsafe base64 32 bytes)
       # Сгенерировать: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-      FERNET_KEY: "PASTE_YOUR_FERNET_KEY_HERE"
+      FERNET_KEY: "fu0Tt3ash3m_HdJI6GPFNREuntIp2qWV-Yt6V3iUOOo="
 
       # session alias TTL для параллельных запросов (если добавлял)
       SESSION_ALIAS_TTL_SEC: "20"
