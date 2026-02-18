@@ -1,1 +1,1 @@
-
+Скрин того что docker-compose работает - ![Screenshot 2026-02-17 at 18.56.48.png](Screenshot%202026-02-17%20at%2018.56.48.png)
